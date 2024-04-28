@@ -6,8 +6,11 @@
 
 int main()
 {
-	int file = open("test.txt", O_RDONLY);
+	int file = open("testnl.txt", O_RDONLY);
 	char * s = get_next_line(file);
+	printf("%s\n", s);
+	free(s);
+	s = get_next_line(file);
 	printf("%s\n", s);
 	free(s);
 	s = get_next_line(file);

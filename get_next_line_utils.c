@@ -3,100 +3,109 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line_utils.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hulim <marvin@42.fr>                       +#+  +:+       +#+        */
+/*   By: hulim <hulim@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/11/12 18:00:13 by hulim             #+#    #+#             */
-/*   Updated: 2023/11/12 18:00:16 by hulim            ###   ########.fr       */
+/*   Created: 2024/04/25 20:09:55 by hulim             #+#    #+#             */
+/*   Updated: 2024/04/25 20:11:12 by hulim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-size_t	ft_strlen(const char *s)
+void	updatememline(int fd, char **memline)
 {
-	char	*temp;
-	int		count;
+	char	*buf;
+	int		chars;
 
-	if (s == NULL)
-		return (0);
-	temp = (char *) s;
-	count = 0;
-	while (*temp)
+	if (checkfornewline(*memline) >= 0)
+		return ;
+	buf = (char *)gnl_calloc(BUFFER_SIZE + 1, sizeof(char));
+	if (!buf)
+		return ;
+	chars = read(fd, buf, BUFFER_SIZE);
+	if (chars == -1)
 	{
-		count++;
-		temp++;
+		free(*memline);
+		*memline = NULL;
 	}
-	return (count);
+	if (chars <= 0)
+	{
+		free(buf);
+		return ;
+	}
+	combinelines(memline, &buf);
+	updatememline(fd, memline);
+	return ;
 }
 
-int	newlinefound(char *memline)
+void	combinelines(char **memline, char **buf)
 {
-	if (memline == NULL)
-		return (0);
-	while (*memline)
+	char	*temp;
+	int		c;
+	int		d;
+
+	temp = (char *)gnl_calloc(gnl_strlen(*memline) + gnl_strlen(*buf) + 1,
+			sizeof(char));
+	if (!temp)
+		return ;
+	c = 0;
+	while (*memline && (*memline)[c])
 	{
-		if (*memline == '\n')
-			return (1);
-		memline++;
+		temp[c] = (*memline)[c];
+		c++;
 	}
-	return (0);
+	d = 0;
+	while (*buf && (*buf)[d])
+	{
+		temp[c + d] = (*buf)[d];
+		d++;
+	}
+	free(*memline);
+	free(*buf);
+	*memline = temp;
 }
 
-char	*ft_strjoin(char *s1, char *s2)
+int	checkfornewline(char *memline)
 {
-	int		i;
-	int		j;
-	int		totallen;
-	char	*temp;
+	int	c;
 
-	i = 0;
-	j = 0;
-	totallen = ft_strlen(s1) + ft_strlen(s2);
-	temp = (char *)malloc(sizeof(char) * (totallen + 1));
-	if (temp == NULL)
+	if (!memline)
+		return (-1);
+	c = 0;
+	while (memline[c])
+	{
+		if (memline[c] == '\n')
+			return (c);
+		c++;
+	}
+	return (-1);
+}
+
+void	*gnl_calloc(size_t count, size_t size)
+{
+	void	*ptr;
+	size_t	c;
+
+	ptr = malloc(count * size);
+	if (!ptr)
 		return (NULL);
-	if (s1)
-		while (s1[j])
-			temp[i++] = s1[j++];
-	j = 0;
-	while (s2[j])
-		temp[i++] = s2[j++];
-	temp[i] = '\0';
-	myfree(&s1);
-	myfree(&s2);
-	return (temp);
+	c = 0;
+	while (c < count * size)
+	{
+		((char *)ptr)[c] = 0;
+		c++;
+	}
+	return (ptr);
 }
 
-char	*ft_strchr(const char *s, int c)
+int	gnl_strlen(char *str)
 {
-	int	count;
-	int	len;
+	int	c;
 
-	count = 0;
-	len = ft_strlen(s);
-	while (count <= len)
-	{
-		if (s[count] == (unsigned char) c)
-		{
-			return ((char *)&s[count]);
-		}
-		count++;
-	}
-	return (NULL);
-}
-
-size_t	ft_strlcpy(char *dest, const char *src, size_t size)
-{
-	size_t	count;
-
-	count = 0;
-	if (size == 0)
-		return (ft_strlen(src));
-	while (src[count] != 0 && count < (size -1))
-	{
-		dest[count] = src[count];
-		count++;
-	}
-	dest[count] = 0;
-	return (ft_strlen(src));
+	if (!str)
+		return (0);
+	c = 0;
+	while (str[c])
+		c++;
+	return (c);
 }

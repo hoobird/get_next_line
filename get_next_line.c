@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hoobird <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hulim <hulim@student.42singapore.sg>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/09/26 21:03:11 by hoobird           #+#    #+#             */
-/*   Updated: 2023/09/26 21:04:26 by hoobird          ###   ########.fr       */
+/*   Created: 2024/04/25 20:09:17 by hulim             #+#    #+#             */
+/*   Updated: 2024/04/25 20:11:04 by hulim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,82 +19,64 @@ char	*get_next_line(int fd)
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-	memline = readnextline(fd, memline);
-	if (memline)
+	updatememline(fd, &memline);
+	if (gnl_strlen(memline) == 0 || !memline)
 	{
-		nextline = splitline(memline);
-		memline = shiftline(memline);
-		return (nextline);
+		if (memline)
+			free(memline);
+		return (NULL);
 	}
-	return (NULL);
+	nextline = splitline(memline);
+	memline = transfermemline(&memline);
+	return (nextline);
 }
 
-char	*readnextline(int fd, char *memline)
+char	*transfermemline(char **meml)
 {
-	char	*buf;
-	int		readsize;
-
-	readsize = 1;
-	while (newlinefound(memline) == 0 && readsize)
-	{
-		buf = (char *)malloc(sizeof(char) * (BUFFER_SIZE + 1));
-		if (buf == NULL)
-			return (NULL);
-		readsize = read(fd, buf, BUFFER_SIZE);
-		if (readsize < 0)
-			return (myfree(&buf), myfree(&memline), NULL);
-		buf[readsize] = '\0';
-		memline = ft_strjoin(memline, buf);
-	}
-	return (memline);
-}
-
-char	*splitline(char *memline)
-{
+	int		len;
+	char	*temp;
 	int		i;
-	char	*temp;
 
+	len = checkfornewline(*meml);
+	if (len == -1 || !(*meml)[len + 1])
+	{
+		free(*meml);
+		return (NULL);
+	}
+	temp = (char *)gnl_calloc(gnl_strlen(*meml) - len, sizeof(char));
+	if (!temp)
+		return (NULL);
+	len++;
 	i = 0;
-	temp = malloc(sizeof(char) * (ft_strlen(memline) + 1));
-	if (!temp || !memline[0])
-		return (myfree(&temp), NULL);
-	while (memline[i] != '\0')
+	while ((*meml)[len])
 	{
-		temp[i] = memline[i];
-		i++;
-		if (memline[i] == '\n')
-		{
-			temp[i] = memline[i];
-			i++;
-			break ;
-		}
+		temp[i++] = (*meml)[len];
+		len++;
 	}
-	temp[i] = '\0';
+	free(*meml);
 	return (temp);
 }
 
-char	*shiftline(char *memline)
+char	*splitline(char *line)
 {
-	int		newlen;
-	char	*newline;
-	char	*temp;
+	char	*output;
+	int		len;
+	int		count;
 
-	newline = ft_strchr(memline, '\n');
-	temp = NULL;
-	if (newline)
+	len = checkfornewline(line);
+	if (len == -1)
+		output = gnl_calloc(gnl_strlen(line) + 1, sizeof(char));
+	else
+		output = gnl_calloc(len + 2, sizeof(char));
+	if (!output)
+		return (NULL);
+	count = 0;
+	while (line[count] && line[count] != '\n')
 	{
-		newlen = ft_strlen(newline + 1);
-		temp = malloc(sizeof(char) * (newlen + 1));
-		if (!temp)
-			return (myfree(&temp), NULL);
-		ft_strlcpy(temp, newline + 1, newlen + 1);
+		output[count] = line[count];
+		count++;
 	}
-	myfree(&memline);
-	return (temp);
-}
-
-void	myfree(char **ptr)
-{
-	free(*ptr);
-	*ptr = NULL;
+	if (len >= 0)
+		output[count] = '\n';
+	return (output);
 }
